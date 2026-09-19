@@ -1,0 +1,53 @@
+menu "ESP32 Remote Power"
+
+config RELAY_WIFI_SSID
+    string "Wi-Fi SSID"
+    default ""
+    help
+        SSID used by the board in station mode. ESP32-C3 is 2.4 GHz only.
+
+config RELAY_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default ""
+    help
+        Password used by the board in station mode.
+
+config RELAY_WIFI_COUNTRY
+    string "Wi-Fi country code"
+    default "CN"
+    help
+        Two-letter regulatory country code (e.g. CN, US, DE, JP).
+
+config RELAY_WIFI_TX_POWER
+    int "Wi-Fi max TX power (units of 0.25 dBm)"
+    default 60
+    range 8 84
+    help
+        TX power in 0.25 dBm units: 80 = 20 dBm, 60 = 15 dBm, 40 = 10 dBm.
+        ESP32-C3 Super Mini and similar boards frequently FAIL to connect at
+        the default ~20 dBm (the AP never answers 802.11 auth frames,
+        disconnect reason 2 / AUTH_EXPIRE). 60 (15 dBm) is a proven value;
+        if you still cannot connect, lower it further to 40 (10 dBm).
+
+config RELAY_BASE_URL
+    string "Relay server base URL"
+    default "https://relay.example.com/relay"
+    help
+        HTTPS base URL of your relayd deployment, WITHOUT trailing slash,
+        e.g. https://relay.example.com/relay
+
+config RELAY_TOKEN
+    string "Relay shared token"
+    default "change-me"
+    help
+        Shared secret between this board and relayd. Must match the token
+        file used by relayd (--token-file). Use a long random string.
+
+config RELAY_WOL_DEFAULT_MAC
+    string "Default WoL target MAC"
+    default "aa:bb:cc:dd:ee:ff"
+    help
+        MAC woken by the WOL command when no address argument is given.
+        Set this to your PC's Ethernet/Wi-Fi MAC address.
+
+endmenu

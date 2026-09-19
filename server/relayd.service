@@ -1,0 +1,23 @@
+[Unit]
+Description=ESP32 command relay (relayd)
+After=network.target
+
+[Service]
+Type=simple
+# Generate a token first:
+#   install -d -m 700 /etc/relayd /opt/relayd
+#   openssl rand -hex 20 > /etc/relayd/token && chmod 600 /etc/relayd/token
+ExecStart=/usr/bin/python3 /opt/relayd/relayd.py \
+    --host 127.0.0.1 --port 59777 \
+    --token-file /etc/relayd/token \
+    --state-file /opt/relayd/state.sqlite3
+Restart=always
+RestartSec=3
+# Hardening (optional but recommended)
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/relayd
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

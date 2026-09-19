@@ -1,0 +1,19 @@
+# build artifacts
+build/
+managed_components/
+dependencies.lock
+
+# generated config — contains Wi-Fi password, relay URL and token
+firmware/sdkconfig
+firmware/sdkconfig.old
+
+# credentials / tokens — never commit
+wifi_creds.h
+token.txt
+*.token
+bridge/bridge.log
+
+# python
+__pycache__/
+*.pyc
+server/state.sqlite3*

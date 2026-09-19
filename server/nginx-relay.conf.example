@@ -1,0 +1,25 @@
+# Example nginx reverse proxy for relayd.
+# relayd itself binds 127.0.0.1:59777 (plain HTTP, token-authenticated).
+# Put TLS termination in front of it — the token travels as a query/body
+# parameter, so serving it over plain HTTP on the internet would expose it.
+#
+# The firmware polls  <RELAY_BASE_URL>/poll  and posts to  <RELAY_BASE_URL>/ack,
+# so map a path prefix (here: /relay) onto relayd.
+
+server {
+    listen 443 ssl;
+    server_name relay.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/relay.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/relay.example.com/privkey.pem;
+
+    location /relay/ {
+        proxy_pass http://127.0.0.1:59777/;
+        proxy_http_version 1.1;
+        # long-poll: /poll?wait=25 + client timeout 35s — keep proxy timeouts above that
+        proxy_read_timeout 75s;
+        proxy_send_timeout 75s;
+        proxy_set_header Connection "";
+        # Token is inside query/body; forwarding client headers is not required.
+    }
+}
