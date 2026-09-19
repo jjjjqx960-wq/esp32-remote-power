@@ -11,8 +11,6 @@ firmware/sdkconfig.old
 wifi_creds.h
 token.txt
 *.token
-bridge/bridge.log
-
 # python
 __pycache__/
 *.pyc

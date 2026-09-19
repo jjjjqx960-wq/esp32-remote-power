@@ -7,6 +7,12 @@ or a human. Every step has:
 - **Expect** — what success looks like (verify before continuing)
 - **If it fails** — symptom → cause → fix
 
+> **Important operating rule**: this project has a validated production relay
+> deployment. The normal hardware path is **ESP32 Wi-Fi WoL only** and needs no
+> GPIO/relay/motherboard wiring. If `relayd` is already active on the target
+> server, inspect and reuse it. Do not reinstall it, rotate its token, restart
+> it, or overwrite `/opt/relayd/relayd.py` unless the operator explicitly asks.
+
 Prerequisites you must already have (if any is missing, stop and ask the operator):
 
 1. A Linux server reachable over the public internet with a domain name pointing
@@ -15,6 +21,9 @@ Prerequisites you must already have (if any is missing, stop and ask the operato
 2. An ESP32-C3 board (Super Mini recommended, ~¥15 / ~$2) + a **data-capable**
    USB cable (many cheap cables are power-only — this is the #1 flashing failure).
 3. Root/sudo on the server. Local machine needs Python 3.9+ and ESP-IDF v5.x.
+4. A target PC whose BIOS/UEFI and NIC support Wake-on-LAN.
+5. The ESP32 and target PC must share a LAN/broadcast domain that permits
+   Wi-Fi-to-LAN broadcast traffic.
 
 > **Convention**: `<PLACEHOLDER>` means "replace before running". Never commit
 > real tokens/passwords — they live only in `/etc/relayd/token` and `sdkconfig`.
@@ -23,7 +32,25 @@ Prerequisites you must already have (if any is missing, stop and ask the operato
 
 ## Phase A — Server (relayd)
 
+### A0. Check for an existing deployment first
+
+Run these commands before any installation:
+
+```bash
+sudo systemctl is-active relayd
+sudo systemctl cat relayd
+sudo test -f /opt/relayd/relayd.py
+sudo test -f /etc/relayd/token
+```
+
+**Expect**: `active`, a service pointing at the deployed relayd source, and both
+files present. If these checks pass, skip A1 and continue with A2. The existing
+token must remain unchanged because it is already compiled into the production
+firmware.
+
 ### A1. Install relayd
+
+Use this only when A0 confirms that relayd is not deployed.
 
 Fastest path — run the idempotent installer as root:
 
@@ -119,7 +146,7 @@ ESP-IDF PowerShell shortcut which already has the environment loaded.
 
 ### B2. Configure — fill `firmware/sdkconfig.defaults`
 
-Edit these 6 lines (or run `idf.py menuconfig` → "ESP32 Remote Power"):
+Edit these 7 lines (or run `idf.py menuconfig` → "ESP32 Remote Power"):
 
 | Key | Value |
 |---|---|
@@ -135,6 +162,11 @@ Edit these 6 lines (or run `idf.py menuconfig` → "ESP32 Remote Power"):
 > IDF default (~20 dBm = `80`) is exactly why "Wi-Fi won't connect". `60` (15 dBm)
 > is the verified fix; `40` (10 dBm) is the fallback. See
 > `docs/WIFI-TX-POWER-FIX.md`.
+
+The public source intentionally contains placeholders only. Never copy a
+production `sdkconfig`, `wifi_creds.h`, token, SSID/password, server address, or
+real target MAC into a public commit. The production firmware may use a generated
+private credentials header; that header is not part of this repository.
 
 ### B3. Build & flash
 
@@ -156,7 +188,7 @@ relay poll task ready -> https://relay.example.com/relay
 
 | Symptom | Cause → Fix |
 |---|---|
-| `Could not open <PORT>` | cable is power-only → swap cable; or another monitor/bridge holds the port → kill it |
+| `Could not open <PORT>` | cable is power-only → swap cable; or another serial monitor holds the port → close it |
 | `reason=2` loops (auth expire) | TX power still too high → set `CONFIG_RELAY_WIFI_TX_POWER=40` and reflash |
 | `reason=15` / `201` | wrong password → fix SSID/password; `201` = SSID not found (maybe 5 GHz) |
 | `relay poll fail: err=...` | HTTPS/token problem → verify A3 curl from server; check `CONFIG_RELAY_TOKEN` matches `/etc/relayd/token` |
@@ -194,7 +226,6 @@ Usage:
 ```bash
 esp32ctl wol                    # wake default MAC
 esp32ctl wol 11:22:33:44:55:66
-esp32ctl pulse                  # GPIO3 400ms press (needs wiring, Phase D)
 ```
 
 Or just curl — the whole protocol is 4 endpoints (see README §Protocol).
@@ -208,9 +239,9 @@ Bookmark it on your phone.
 
 ## Phase D — Optional: GPIO3 physical power button
 
-Only needed when WoL is impossible (BIOS WoL off, PC on Wi-Fi, etc.).
-WoL-only users skip this phase entirely — the board just needs USB power
-inside your home.
+This is not required by the validated deployment. WoL-only users skip this phase
+entirely; the board only needs independent USB power inside the home. Use GPIO3
+only if the operator explicitly chooses the physical-button fallback.
 
 Wiring (optocoupler/relay module recommended, ~¥3):
 
@@ -241,7 +272,7 @@ ESP32 GND   ──> relay module GND
 | board online | same `/status` JSON | `clients.esp32.online == true` (last_poll ≤ 90 s) |
 | command flow | `esp32ctl status` | board log shows cmd + ack |
 | WoL | `esp32ctl wol` with PC off | PC powers on |
-| Pulse | `esp32ctl pulse` with PC off | PC powers on |
+| Optional PULSE | `esp32ctl pulse` with PC off and wiring installed | PC powers on |
 
 ## Troubleshooting quick index
 

@@ -137,7 +137,7 @@ class CommandStore:
 
     def poll(self, client, wait=0):
         if client != "esp32":
-            raise RelayError(409, "client=esp32 required; legacy bridge polling is disabled")
+            raise RelayError(409, "client=esp32 required; non-ESP32 clients are disabled")
         if isinstance(wait, bool) or not isinstance(wait, (int, float)) or not math.isfinite(wait) or wait < 0:
             raise RelayError(400, "invalid wait")
         deadline = time.monotonic() + min(wait, 55)
