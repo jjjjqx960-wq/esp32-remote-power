@@ -2,7 +2,6 @@
 # esp32ctl — enqueue a command for the ESP32 board via relayd.
 #
 # Usage:
-#   esp32ctl pulse              # 400ms power-button press (GPIO3)
 #   esp32ctl status             # ask firmware to log readiness
 #   esp32ctl wol [aa:bb:..:ff]  # Wake-on-LAN magic packet
 #                               # (default: firmware's CONFIG_RELAY_WOL_DEFAULT_MAC)

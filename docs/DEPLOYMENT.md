@@ -8,10 +8,16 @@ or a human. Every step has:
 - **If it fails** — symptom → cause → fix
 
 > **Important operating rule**: this project has a validated production relay
-> deployment. The normal hardware path is **ESP32 Wi-Fi WoL only** and needs no
+> deployment. The hardware path is **ESP32 Wi-Fi WoL only** and needs no
 > GPIO/relay/motherboard wiring. If `relayd` is already active on the target
 > server, inspect and reuse it. Do not reinstall it, rotate its token, restart
 > it, or overwrite `/opt/relayd/relayd.py` unless the operator explicitly asks.
+>
+> **AI scope**: use only the firmware and server files in this repository.
+> Do not select code from unrelated Wi-Fi experiments, old backups, build
+> output, or discarded prototypes elsewhere on the workstation. If a board is
+> already running the validated firmware, inspect it first and do not flash it
+> unless the operator explicitly requests a firmware change.
 
 Prerequisites you must already have (if any is missing, stop and ask the operator):
 
@@ -237,26 +243,7 @@ Bookmark it on your phone.
 
 ---
 
-## Phase D — Optional: GPIO3 physical power button
-
-This is not required by the validated deployment. WoL-only users skip this phase
-entirely; the board only needs independent USB power inside the home. Use GPIO3
-only if the operator explicitly chooses the physical-button fallback.
-
-Wiring (optocoupler/relay module recommended, ~¥3):
-
-```
-ESP32 GPIO3 ──> relay module IN ──> relay COM/NO ──> motherboard F_PANEL PWR_SW+ / PWR_SW-
-ESP32 GND   ──> relay module GND
-```
-
-- `PULSE` closes GPIO3 for 400 ms = one short power-button press.
-- Default logic is active-low (`RELAY_ACTIVE_LOW=1`). If your module triggers on
-  HIGH, rebuild: `idf.py build -DRELAY_ACTIVE_LOW=0 && idf.py flash`.
-- Also enable "power on after AC loss" in BIOS if you want full recovery after
-  outages.
-
-## Phase E — Enable WoL on the target PC (one-time)
+## Phase D — Enable WoL on the target PC (one-time)
 
 1. BIOS/UEFI: enable *Wake-on-LAN* / *PME* / *Power On by PCIe*.
 2. OS NIC driver: enable *Wake on Magic Packet* (Windows: Device Manager → NIC →
@@ -272,7 +259,6 @@ ESP32 GND   ──> relay module GND
 | board online | same `/status` JSON | `clients.esp32.online == true` (last_poll ≤ 90 s) |
 | command flow | `esp32ctl status` | board log shows cmd + ack |
 | WoL | `esp32ctl wol` with PC off | PC powers on |
-| Optional PULSE | `esp32ctl pulse` with PC off and wiring installed | PC powers on |
 
 ## Troubleshooting quick index
 

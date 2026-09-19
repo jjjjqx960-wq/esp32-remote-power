@@ -3,8 +3,6 @@
 Remote power-on for your PC with a **~¥15 / ~$2 ESP32-C3 Super Mini** — the validated
 path is pure network Wake-on-LAN: the board receives a command over HTTPS and sends
 magic packets on the home LAN. No GPIO, relay, or motherboard wiring is required.
-The firmware still contains an optional GPIO3/PULSE compatibility path, but it is
-not part of the normal WoL deployment.
 
 ```
 [you] --esp32ctl / web button--> [relayd on your server] <--HTTPS long-poll-- [ESP32-C3]
@@ -18,8 +16,6 @@ not part of the normal WoL deployment.
 
 - **WoL over Wi-Fi**: `WOL <mac>` sends the magic packet to both the subnet-directed
   broadcast and `255.255.255.255`, 3× each, with a configurable default target MAC.
-- **Optional GPIO3/PULSE compatibility**: retained for boards that use the original
-  physical-button wiring, but do not connect GPIO3 for the normal network WoL path.
 - **Durable command relay**: `server/relayd.py` is a stdlib-only Python daemon with
   SQLite persistence, command leases, ACK/retry (3 attempts) and per-client status —
   commands survive board reboots and server restarts.
@@ -57,7 +53,7 @@ Full write-up with the diagnostic method: [docs/WIFI-TX-POWER-FIX.md](docs/WIFI-
 ## Repository layout
 
 ```
-firmware/            ESP-IDF project (ESP32-C3): Wi-Fi STA + relay poller + WoL + GPIO3 pulse
+firmware/            ESP-IDF project (ESP32-C3): Wi-Fi STA + relay poller + WoL
   main/main.c        all firmware logic (~600 lines, single file)
   main/Kconfig.projbuild   SSID/password/country/TX power/relay URL/token/MAC options
   sdkconfig.defaults       template — fill in your values before flashing
@@ -66,7 +62,7 @@ server/test_relayd.py      unit tests for the store
 server/relayd.service      systemd unit
 server/nginx-relay.conf.example   HTTPS reverse-proxy snippet
 deploy/server-setup.sh   idempotent relayd installer (systemd + token + smoke test)
-client/esp32ctl    bash CLI: esp32ctl wol | pulse | status
+client/esp32ctl    bash CLI: esp32ctl wol | status
 docs/DEPLOYMENT.md         step-by-step deploy guide written for AI agents to execute literally
 docs/WIFI-TX-POWER-FIX.md  the Super Mini TX-power investigation in detail
 ```
@@ -114,22 +110,11 @@ esp32ctl status          # queue/board status
 
 Or open `https://your-server/relay/?t=<token>` and press the WoL button.
 
-### 4. Optional GPIO3/PULSE compatibility
-
-Only use this section when the board is intentionally wired to a relay or
-opto-coupler. It is not needed for WoL-only operation:
-
-`PULSE` toggles GPIO3 for 400 ms. The relay logic level is selectable at build time:
-
-```bash
-idf.py build -DRELAY_ACTIVE_LOW=1   # default: active-low (L jumper style)
-```
-
 ## Protocol
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/cmd`   | POST `{token, cmd}` | enqueue `STATUS`/`WOL [mac]` or optional `PULSE` |
+| `/cmd`   | POST `{token, cmd}` | enqueue `STATUS`/`WOL [mac]` |
 | `/poll?wait=N&client=esp32` | GET | board long-polls; leases a command |
 | `/ack`   | POST `{id, client, attempt, ok, detail}` | board reports execution result |
 | `/status`| GET | queue + per-client online status |
@@ -156,7 +141,6 @@ MIT — see [LICENSE](LICENSE).
 
 十几块钱的 ESP32-C3 Super Mini + 已部署的 relayd + HTTPS 入口，就能做出互联网远程开机：
 固件长轮询队列，收到 `WOL` 就在家中局域网发送魔术包唤醒电脑，不需要任何接线。
-`PULSE`/GPIO3 只是保留的可选兼容路径。
 
 **重点踩坑**：Super Mini 连不上 WiFi（能扫到 AP、认证阶段超时 reason=2），不是密码/
 加密方式问题，是**发射功率太高**——把 `esp_wifi_set_max_tx_power` 从默认约 20dBm
