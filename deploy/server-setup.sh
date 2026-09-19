@@ -29,7 +29,7 @@ fi
 if [ -f "$SRC_DIR/server/relayd.py" ]; then
     install -m 644 "$SRC_DIR/server/relayd.py" "$HOME_DIR/relayd.py"
 elif command -v curl >/dev/null; then
-    curl -fsSL "https://raw.githubusercontent.com/jjjjqx960-wq/esp32-remote-power/main/server/relayd.py" \
+    curl -fsSL "https://raw.githubusercontent.com/q7m4v9k2x/esp32-remote-power/main/server/relayd.py" \
         -o "$HOME_DIR/relayd.py"
 else
     echo "no relayd.py found and curl missing" >&2; exit 1

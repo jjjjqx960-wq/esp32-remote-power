@@ -4,7 +4,7 @@
 POST /cmd accepts the original {token, cmd} body, with optional target and ttl.
 GET /poll?t=...&client=esp32&wait=25 leases a command for 60 seconds.
 POST /ack?t=... accepts {id, client, attempt, ok, detail}; repeat ACKs are safe.
-WOL/STATUS may be delivered at most three times. PULSE is never auto-replayed.
+WOL/STATUS may be delivered at most three times.
 "succeeded" means the board acknowledged execution, not that a PC has booted.
 """
 
@@ -38,7 +38,7 @@ def normalize_command(value):
     if not isinstance(value, str) or len(value) > 128:
         raise RelayError(400, "bad cmd")
     parts = value.upper().split(maxsplit=1)
-    if len(parts) == 1 and parts[0] in {"PULSE", "WOL", "STATUS"}:
+    if len(parts) == 1 and parts[0] in {"WOL", "STATUS"}:
         return parts[0]
     if len(parts) == 2 and parts[0] == "WOL":
         mac = re.sub(r"[:.\-\s]", "", parts[1])
@@ -98,9 +98,7 @@ class CommandStore:
             "SELECT * FROM commands WHERE state IN ('pending','inflight')").fetchall()
         for row in rows:
             if row["expires"] <= now:
-                uncertain = row["state"] == "inflight" and row["cmd"] == "PULSE"
-                self._finish(row["id"], "unknown" if uncertain else "failed",
-                             "command_expired", now)
+                self._finish(row["id"], "failed", "command_expired", now)
             elif row["state"] == "inflight" and row["lease_until"] <= now:
                 if row["cmd"].split()[0] not in REPLAYABLE:
                     self._finish(row["id"], "unknown", "ack_timeout_not_replayed", now)

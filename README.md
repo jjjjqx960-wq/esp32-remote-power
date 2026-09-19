@@ -21,9 +21,9 @@ magic packets on the home LAN. No GPIO, relay, or motherboard wiring is required
   commands survive board reboots and server restarts.
 - **Everything secret lives in config**: Wi-Fi credentials, relay URL, token and the
   default MAC are all `menuconfig`/`sdkconfig` options — nothing is hardcoded.
-- **Existing relay deployment**: `server/relayd.py` is the command queue used by the
-  ESP32. If relayd is already running, inspect and reuse it; do not reinstall or
-  replace it just because this repository is being published.
+- **Self-hosted relay**: `server/relayd.py` is the command queue used by the
+  ESP32. The repository includes the installer and service definition; verify
+  deployment on the target server before flashing the firmware.
 
 ## ⚠️ ESP32-C3 Super Mini won't connect to Wi-Fi? Lower the TX power.
 
@@ -73,10 +73,10 @@ docs/WIFI-TX-POWER-FIX.md  the Super Mini TX-power investigation in detail
 > lists exact commands, expected output, and a failure→fix table. It's written
 > to be executed literally end-to-end.
 
-### 1. Server (existing relayd deployment)
+### 1. Server (deployment verification required)
 
 ```bash
-# Use the already deployed relayd if it exists.
+# Verify the target server; these checks must pass before flashing the board.
 sudo systemctl is-active relayd
 sudo test -f /etc/relayd/token
 sudo test -f /opt/relayd/relayd.py
@@ -139,7 +139,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## 中文速览
 
-十几块钱的 ESP32-C3 Super Mini + 已部署的 relayd + HTTPS 入口，就能做出互联网远程开机：
+十几块钱的 ESP32-C3 Super Mini + 自建 relayd + HTTPS 入口，就能做出互联网远程开机：
 固件长轮询队列，收到 `WOL` 就在家中局域网发送魔术包唤醒电脑，不需要任何接线。
 
 **重点踩坑**：Super Mini 连不上 WiFi（能扫到 AP、认证阶段超时 reason=2），不是密码/

@@ -46,13 +46,10 @@ class RelayStoreTests(unittest.TestCase):
             store.poll(None)
         self.assertEqual(store.poll("esp32")["cmd"], "STATUS")
 
-    def test_pulse_is_not_replayed_after_lease_expiry(self):
-        store, clock = self.make_store(lease=10, ttl=100)
-        command_id = store.enqueue("PULSE")["id"]
-        self.assertEqual(store.poll("esp32")["id"], command_id)
-        clock.advance(11)
-        self.assertIsNone(store.poll("esp32")["cmd"])
-        self.assertEqual(store.status()["results"][0]["state"], "unknown")
+    def test_unsupported_legacy_pulse_is_rejected(self):
+        store, _ = self.make_store()
+        with self.assertRaisesRegex(RelayError, "bad cmd"):
+            store.enqueue("PULSE")
 
     def test_state_and_sequence_survive_restart(self):
         directory = tempfile.TemporaryDirectory()

@@ -1,4 +1,3 @@
-#include "driver/gpio.h"
 #include "cJSON.h"
 #include "esp_crt_bundle.h"
 #include "esp_err.h"
@@ -23,7 +22,6 @@
 #include <string.h>
 #include <strings.h>
 
-static const gpio_num_t relayPin = GPIO_NUM_3;
 static const char *TAG = "relay";
 static const char *WIFI_TAG = "wifi_scan";
 static EventGroupHandle_t wifi_event_group;
@@ -32,23 +30,6 @@ static SemaphoreHandle_t command_mutex;
 
 #define WIFI_CONNECTED_BIT BIT0
 #define FIRMWARE_VERSION "wol-ack-20260919"
-
-#if RELAY_ACTIVE_LOW
-static const int relayOn = 0;
-static const int relayOff = 1;
-#else
-static const int relayOn = 1;
-static const int relayOff = 0;
-#endif
-
-static void relay_pulse(void)
-{
-    ESP_ERROR_CHECK(gpio_set_level(relayPin, relayOn));
-    ESP_LOGI(TAG, "RELAY PULSE ON (400ms)");
-    vTaskDelay(pdMS_TO_TICKS(400));
-    ESP_ERROR_CHECK(gpio_set_level(relayPin, relayOff));
-    ESP_LOGI(TAG, "RELAY PULSE OFF");
-}
 
 static int hex_value(char c)
 {
@@ -352,13 +333,8 @@ static bool dispatch_command(const char *input)
         locked = true;
     }
 
-    if (command_is(command, "PULSE")) {
-        relay_pulse();
-        ok = true;
-        goto done;
-    }
     if (command_is(command, "STATUS")) {
-        ESP_LOGI(TAG, "RELAY READY (idle), trigger=PULSE");
+        ESP_LOGI(TAG, "WoL firmware ready");
         ok = true;
         goto done;
     }
@@ -578,21 +554,8 @@ static void relay_poll_task(void *arg)
 
 void app_main(void)
 {
-    /* Preload inactive latch before enabling output driver. */
-    ESP_ERROR_CHECK(gpio_set_level(relayPin, relayOff));
-    const gpio_config_t config = {
-        .pin_bit_mask = 1ULL << GPIO_NUM_3,
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
-    };
-    ESP_ERROR_CHECK(gpio_config(&config));
-
-    ESP_LOGI(TAG, "GPIO3 trigger=%s ON=%d OFF=%d; idle until PULSE",
-             RELAY_ACTIVE_LOW ? "LOW (L)" : "HIGH (H)", relayOn, relayOff);
     ESP_LOGI(TAG, "Firmware %s", FIRMWARE_VERSION);
-    ESP_LOGI(TAG, "RELAY READY (idle); type PULSE + Enter for one 400ms press");
+    ESP_LOGI(TAG, "WoL firmware ready");
     wifi_event_group = xEventGroupCreate();
     if (wifi_event_group == NULL) {
         ESP_LOGE(WIFI_TAG, "Could not create Wi-Fi event group");
@@ -607,5 +570,4 @@ void app_main(void)
     xTaskCreate(relay_poll_task, "relay_poll", 8192, NULL, 4, NULL);
     wifi_connect();
 }
-
 

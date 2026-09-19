@@ -7,11 +7,10 @@ or a human. Every step has:
 - **Expect** — what success looks like (verify before continuing)
 - **If it fails** — symptom → cause → fix
 
-> **Important operating rule**: this project has a validated production relay
-> deployment. The hardware path is **ESP32 Wi-Fi WoL only** and needs no
-> GPIO/relay/motherboard wiring. If `relayd` is already active on the target
-> server, inspect and reuse it. Do not reinstall it, rotate its token, restart
-> it, or overwrite `/opt/relayd/relayd.py` unless the operator explicitly asks.
+> **Important operating rule**: this repository provides a self-hosted relay
+> deployment and an **ESP32 Wi-Fi WoL-only** firmware path. No GPIO, relay, or
+> motherboard wiring is required. Verify the target server before flashing the
+> board; do not claim deployment or hardware validation that was not performed.
 >
 > **AI scope**: use only the firmware and server files in this repository.
 > Do not select code from unrelated Wi-Fi experiments, old backups, build
@@ -38,7 +37,7 @@ Prerequisites you must already have (if any is missing, stop and ask the operato
 
 ## Phase A — Server (relayd)
 
-### A0. Check for an existing deployment first
+### A0. Check the target server
 
 Run these commands before any installation:
 
@@ -49,19 +48,18 @@ sudo test -f /opt/relayd/relayd.py
 sudo test -f /etc/relayd/token
 ```
 
-**Expect**: `active`, a service pointing at the deployed relayd source, and both
-files present. If these checks pass, skip A1 and continue with A2. The existing
-token must remain unchanged because it is already compiled into the production
-firmware.
+**Expect**: `active`, a service pointing at the intended relayd source, and both
+files present. If any check fails, complete A1 before continuing. Keep the token
+stable after firmware configuration; changing it requires rebuilding the firmware.
 
 ### A1. Install relayd
 
-Use this only when A0 confirms that relayd is not deployed.
+Use this when A0 shows that relayd is not deployed or is incomplete.
 
 Fastest path — run the idempotent installer as root:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jjjjqx960-wq/esp32-remote-power/main/deploy/server-setup.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/q7m4v9k2x/esp32-remote-power/main/deploy/server-setup.sh | sudo bash
 ```
 
 Or from a clone: `sudo bash deploy/server-setup.sh`
