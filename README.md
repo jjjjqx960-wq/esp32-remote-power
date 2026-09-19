@@ -64,21 +64,25 @@ server/relayd.py     stdlib-only command queue daemon (SQLite, lease+ACK+retry)
 server/test_relayd.py      unit tests for the store
 server/relayd.service      systemd unit
 server/nginx-relay.conf.example   HTTPS reverse-proxy snippet
+deploy/server-setup.sh   idempotent relayd installer (systemd + token + smoke test)
 client/esp32ctl    bash CLI: esp32ctl wol | pulse | status
 bridge/relay_bridge.py     OPTIONAL serial-bridge mode (board on USB, no Wi-Fi needed)
+docs/DEPLOYMENT.md         step-by-step deploy guide written for AI agents to execute literally
 docs/WIFI-TX-POWER-FIX.md  the Super Mini TX-power investigation in detail
 ```
 
 ## Quick start
 
+> **AI operators**: follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — every step
+> lists exact commands, expected output, and a failure→fix table. It's written
+> to be executed literally end-to-end.
+
 ### 1. Server (your VPS)
 
 ```bash
-sudo install -d -m 700 /etc/relayd /opt/relayd
-sudo cp server/relayd.py /opt/relayd/
-openssl rand -hex 20 | sudo tee /etc/relayd/token && sudo chmod 600 /etc/relayd/token
-sudo cp server/relayd.service /etc/systemd/system/
-sudo systemctl enable --now relayd
+# one-shot idempotent installer (safe to re-run):
+sudo bash deploy/server-setup.sh
+# manual equivalent is in docs/DEPLOYMENT.md §A1
 ```
 
 Put nginx (or any TLS proxy) in front using `server/nginx-relay.conf.example`,
